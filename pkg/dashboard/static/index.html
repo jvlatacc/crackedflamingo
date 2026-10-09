@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>flamingo · capture dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="brand">flamingo <span class="brand-sub">· capture dashboard</span></div>
+    <div class="status">
+      <span id="status-dot" class="dot" role="presentation"></span>
+      <span id="status-text">starting…</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Populated view: KPIs, timeline, breakdowns, recent captures. -->
+    <section id="zones" hidden>
+      <div class="kpis">
+        <div class="kpi"><div id="kpi-total" class="kpi-num">–</div><div class="kpi-label">captures</div></div>
+        <div class="kpi"><div id="kpi-protocols" class="kpi-num">–</div><div class="kpi-label">protocols</div></div>
+        <div class="kpi"><div id="kpi-hosts" class="kpi-num">–</div><div class="kpi-label">source hosts</div></div>
+        <div class="kpi"><div id="kpi-users" class="kpi-num">–</div><div class="kpi-label">usernames</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>captures over time</h2>
+        <div id="timeline-wrap">
+          <svg id="timeline" viewBox="0 0 600 120" preserveAspectRatio="none" role="img" aria-label="captures over time"></svg>
+          <div class="axis">
+            <span id="timeline-first"></span>
+            <span id="timeline-last"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="panel">
+          <h2>by protocol</h2>
+          <div id="protocol-list" class="rows"></div>
+          <h2>by auth method</h2>
+          <div id="method-chips" class="chips"></div>
+        </div>
+        <div class="panel">
+          <h2>top usernames</h2>
+          <div id="top-users" class="rows"></div>
+          <h2>top source hosts</h2>
+          <div id="top-hosts" class="rows"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>recent captures · <span id="secret-col-note" class="muted">secrets masked</span></h2>
+        <div id="skipped-note" class="muted" hidden></div>
+        <table class="records">
+          <thead>
+            <tr><th>time</th><th>proto</th><th>host</th><th>user</th><th>secret</th></tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Empty state: zero captures is a normal state. -->
+    <section id="empty-state" hidden>
+      <div class="empty-card">
+        <h2>No captures yet.</h2>
+        <p>This page updates every 5 seconds while flamingo runs. Trigger a
+           capture — an SSH or HTTP attempt against a monitored port — and it
+           will appear here.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="secret-hint"></span>
+  </footer>
+
+  <noscript>This dashboard needs JavaScript — it polls the local API every 5 seconds.</noscript>
+</body>
+</html>

@@ -87,6 +87,32 @@ The following formats are supported:
  * syslog:tcp+tls:host - send to the specified host using tls over tcp and port 514
  * syslog:tcp+tls:host:port - send to the specified host using tls over tcp and the specified port
 
+## Dashboard
+
+Flamingo ships a built-in web dashboard that turns the capture log into a live picture of who is spraying credentials at your network — and what they are trying. Captures appear as totals, a time histogram, per-protocol and per-auth-method breakdowns, top source hosts and usernames, and a recent-records table.
+
+Two entry points:
+
+```
+# Serve the dashboard over existing capture logs
+flamingo dashboard flamingo.log
+flamingo dashboard --addr 127.0.0.1:8080 --reveal-secrets capture.log archive.log
+
+# Or run a live dashboard alongside capture
+flamingo --dashboard-addr 127.0.0.1:8080 --protocols ssh --ssh-ports 2222
+```
+
+| Flag | Applies to | Default | Purpose |
+|------|-----------|---------|---------|
+| `--addr` | `dashboard` | `127.0.0.1:8080` | Dashboard bind address |
+| `--reveal-secrets` | `dashboard` | off | Unmask captured secrets (passwords, keys, hashes, community strings) |
+| `--dashboard-addr` | capture | unset (disabled) | Serve a live capture dashboard on this address; seeds history from the configured file outputs |
+| `--dashboard-reveal-secrets` | capture | off | Unmask secrets on the live dashboard |
+
+Multiple log files concatenate into one view, ordered by capture time. Blank or corrupt log lines are skipped and counted (`skipped_lines` in the API summary), never fatal. The dashboard refreshes every 5 seconds; no websockets, no JavaScript dependencies, nothing leaves the machine.
+
+Security posture: the dashboard binds loopback only by default — putting it on an external interface is an explicit `--addr` choice — and captured secrets are masked in both the UI and API unless the server was started with the reveal flag. There is no URL parameter to unmask a shared page.
+
 ## Credits
 
  * Flamingo is developed and maintained by [HD Moore](https://github.com/hdm) and [Tom Steele](https://github.com/tomsteele)
