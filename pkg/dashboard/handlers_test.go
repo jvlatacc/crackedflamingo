@@ -271,6 +271,49 @@ func TestParseLimitUnit(t *testing.T) {
 	}
 }
 
+// TestStaticContentTypes pins the served Content-Type for every embedded
+// asset. The types must not depend on the host's /etc/mime.types, which
+// minimal containers (where honeypots run) lack — files would degrade to
+// sniffed text/plain and browsers would refuse the stylesheet and script.
+func TestStaticContentTypes(t *testing.T) {
+	ts := httptest.NewServer(handlerFor(t, Options{}))
+	defer ts.Close()
+
+	for _, tt := range []struct {
+		file     string
+		wantType string
+	}{
+		{"static/style.css", "text/css; charset=utf-8"},
+		{"static/app.js", "text/javascript; charset=utf-8"},
+	} {
+		resp, err := http.Get(ts.URL + "/" + tt.file)
+		if err != nil {
+			t.Fatalf("GET %s: %v", tt.file, err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("GET %s status = %d, want 200", tt.file, resp.StatusCode)
+		}
+		if got := resp.Header.Get("Content-Type"); got != tt.wantType {
+			t.Errorf("GET %s Content-Type = %q, want %q (host mime.types must not leak in)", tt.file, got, tt.wantType)
+		}
+		if len(body) == 0 {
+			t.Errorf("GET %s: empty body", tt.file)
+		}
+	}
+
+	// Unknown paths under /static/ 404 rather than leak the index.
+	resp, err := http.Get(ts.URL + "/static/nope.css")
+	if err != nil {
+		t.Fatalf("GET /static/nope.css: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET /static/nope.css status = %d, want 404", resp.StatusCode)
+	}
+}
+
 // TestDefaultBindIsLoopback covers criterion 6: with no explicit address the
 // server targets the loopback default, and an actual bind proves loopback.
 func TestDefaultBindIsLoopback(t *testing.T) {
