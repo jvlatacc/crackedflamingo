@@ -34,10 +34,15 @@ type Bucket struct {
 }
 
 // Summary is the GET /api/summary response: the whole-store picture.
+// Source, Live, Reveal, and Error are injected from server Options on each
+// request, not aggregated from records.
 type Summary struct {
 	Total             int            `json:"total"`
 	SkippedLines      int            `json:"skipped_lines"`
 	Source            string         `json:"source"`
+	Live              bool           `json:"live"`
+	Reveal            bool           `json:"reveal"`
+	Error             string         `json:"error,omitempty"`
 	Window            Window         `json:"window"`
 	ByProtocol        map[string]int `json:"by_protocol"`
 	ByType            map[string]int `json:"by_type"`

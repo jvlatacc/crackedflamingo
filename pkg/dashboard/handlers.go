@@ -32,6 +32,14 @@ type Options struct {
 	// SourceLabel names what the dashboard is watching, e.g. the ingested
 	// log files or "live capture". Surfaced in the UI header.
 	SourceLabel string
+	// Live marks the dashboard as attached to a running capture (the
+	// --dashboard-addr mode). The UI header phrases the status differently
+	// for live vs standalone watching.
+	Live bool
+	// SourceError describes a problem with the watched source — e.g. a
+	// seed log that could not be read. When set, the UI keeps any last
+	// known data on screen and names the problem in the header.
+	SourceError string
 }
 
 // NewServer builds the dashboard HTTP server. The store is read on every
@@ -57,6 +65,7 @@ func newHandler(store *Store, opts Options) http.Handler {
 	h := &handler{store: store, opts: opts}
 
 	mux := http.NewServeMux()
+	registerUI(mux)
 	mux.HandleFunc("GET /api/summary", h.handleSummary)
 	mux.HandleFunc("GET /api/records", h.handleRecords)
 	return mux
@@ -70,6 +79,9 @@ type handler struct {
 func (h *handler) handleSummary(w http.ResponseWriter, r *http.Request) {
 	sum := h.store.Summary()
 	sum.Source = h.opts.SourceLabel
+	sum.Live = h.opts.Live
+	sum.Reveal = h.opts.RevealSecrets
+	sum.Error = h.opts.SourceError
 	writeJSON(w, http.StatusOK, sum)
 }
 
