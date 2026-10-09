@@ -36,6 +36,8 @@ type flamingoParameters struct {
 	TLSName            string
 	TLSOrgName         string
 	Protocols          string
+	DashboardAddr      string
+	DashboardReveal    bool
 }
 
 var params = &flamingoParameters{}
@@ -95,4 +97,8 @@ func init() {
 	rootCmd.Flags().StringVarP(&params.TLSKeyFile, "tls-key", "", "", "An optional x509 key for TLS listeners")
 	rootCmd.Flags().StringVarP(&params.TLSName, "tls-name", "", "localhost", "A server name to use with TLS listeners")
 	rootCmd.Flags().StringVarP(&params.TLSOrgName, "tls-org", "", "Flamingo Feed, Inc.", "An organization to use for self-signed certificates")
+
+	// Dashboard (opt-in during capture; unset means no HTTP listener)
+	rootCmd.Flags().StringVarP(&params.DashboardAddr, "dashboard-addr", "", "", "Serve a live capture dashboard on this address (e.g. 127.0.0.1:8080); disabled when unset")
+	rootCmd.Flags().BoolVarP(&params.DashboardReveal, "dashboard-reveal-secrets", "", false, "Unmask captured secrets on the live dashboard (default: masked)")
 }

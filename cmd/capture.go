@@ -18,6 +18,7 @@ import (
 
 	stdlog "log"
 
+	"github.com/atredispartners/flamingo/pkg/dashboard"
 	"github.com/atredispartners/flamingo/pkg/flamingo"
 	log "github.com/sirupsen/logrus"
 )
@@ -95,6 +96,51 @@ func startCapture(cmd *cobra.Command, args []string) {
 
 	// Configure output actions
 	rw := setupOutput(args)
+
+	// Optional live dashboard: an in-memory sink on the existing
+	// RecordWriter plus a loopback HTTP server in its own goroutine.
+	// Opt-in via --dashboard-addr; a dashboard failure must never take
+	// the capture down.
+	if params.DashboardAddr != "" {
+		store := dashboard.NewStore()
+		rw.OutputWriters = append(rw.OutputWriters, func(rec map[string]string) error {
+			store.Add(rec)
+			return nil
+		})
+
+		var sourceErr string
+		for _, f := range fileOutputs(args) {
+			n, skipped, err := store.IngestFile(f)
+			if err != nil {
+				log.Warnf("dashboard: could not seed from %s: %s", f, err)
+				sourceErr = fmt.Sprintf("%s: %s", f, err)
+				continue
+			}
+			if !params.Quiet {
+				log.Infof("dashboard: seeded %d records from %s (%d lines skipped)", n, f, skipped)
+			}
+		}
+
+		srv, err := dashboard.NewServer(store, dashboard.Options{
+			Addr:          params.DashboardAddr,
+			RevealSecrets: params.DashboardReveal,
+			SourceLabel:   "live capture",
+			Live:          true,
+			SourceError:   sourceErr,
+		})
+		if err != nil {
+			log.Warnf("dashboard disabled: %s", err) // never fatal for capture
+		} else {
+			if !params.Quiet {
+				log.Infof("dashboard: serving on http://%s (secrets %s)", params.DashboardAddr, revealWord(params.DashboardReveal))
+			}
+			go func() {
+				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					log.Warnf("dashboard stopped: %s", err)
+				}
+			}()
+		}
+	}
 
 	// Configure TLS certificates
 	setupTLS()
@@ -231,6 +277,27 @@ func setupOutput(outputs []string) *flamingo.RecordWriter {
 	}
 
 	return rw
+}
+
+// fileOutputs returns the file-path outputs from an output list, using the
+// same classification as setupOutput (stdout, webhooks, and syslog are not
+// files). Used to seed the live dashboard from existing capture history;
+// no outputs means the capture default, flamingo.log.
+func fileOutputs(outputs []string) []string {
+	if len(outputs) == 0 {
+		return []string{"flamingo.log"}
+	}
+	var files []string
+	for _, output := range outputs {
+		switch {
+		case output == "-" || output == "stdout":
+		case strings.HasPrefix(output, "http://") || strings.HasPrefix(output, "https://"):
+		case strings.HasPrefix(output, "syslog:") || output == "syslog":
+		default:
+			files = append(files, output)
+		}
+	}
+	return files
 }
 
 func stdoutWriter(rec map[string]string) error {
