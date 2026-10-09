@@ -172,12 +172,21 @@ func (server *Server) SetStats(enable bool) {
 	}
 }
 
+// GetStats returns a snapshot of the current counters. The snapshot is
+// built field by field because a Stats value carries a sync.Mutex, and
+// copying one is both a vet error and a real race under contention.
 func (server *Server) GetStats() Stats {
-	defer func() {
-		server.Stats.statsMutex.Unlock()
-	}()
+	if server.Stats == nil {
+		return Stats{}
+	}
 	server.Stats.statsMutex.Lock()
-	return *server.Stats
+	defer server.Stats.statsMutex.Unlock()
+	return Stats{
+		Conns:    server.Stats.Conns,
+		Binds:    server.Stats.Binds,
+		Unbinds:  server.Stats.Unbinds,
+		Searches: server.Stats.Searches,
+	}
 }
 
 func (server *Server) ListenAndServe(listenString string) error {

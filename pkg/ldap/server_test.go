@@ -283,7 +283,7 @@ func TestSearchStats(t *testing.T) {
 	}
 
 	stats := s.GetStats()
-	log.Println(stats)
+	log.Printf("stats: %d conns, %d binds", stats.Conns, stats.Binds)
 	if stats.Conns != 1 || stats.Binds != 1 {
 		t.Errorf("Stats data missing or incorrect: %v", w.buffer.String())
 	}
@@ -326,7 +326,6 @@ type bindPanic struct {
 
 func (b bindPanic) Bind(bindDN, bindSimplePw string, conn net.Conn) (LDAPResultCode, error) {
 	panic("test panic at the disco")
-	return LDAPResultInvalidCredentials, nil
 }
 
 type searchSimple struct {
@@ -385,9 +384,7 @@ type searchPanic struct {
 }
 
 func (s searchPanic) Search(boundDN string, searchReq SearchRequest, conn net.Conn) (ServerSearchResult, error) {
-	entries := []*Entry{}
 	panic("this is a test panic")
-	return ServerSearchResult{entries, []string{}, []Control{}, LDAPResultSuccess}, nil
 }
 
 type searchControls struct {

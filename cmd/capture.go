@@ -570,7 +570,7 @@ func setupDNS(rw *flamingo.RecordWriter) {
 	// Create a listener for each port
 	dnsPorts, err := flamingo.CrackPorts(params.DNSPorts)
 	if err != nil {
-		log.Fatal("failed to process dns ports %s: %s", params.DNSPorts, err)
+		log.Fatalf("failed to process dns ports %s: %s", params.DNSPorts, err)
 	}
 
 	for _, port := range dnsPorts {
@@ -596,7 +596,7 @@ func setupFTP(rw *flamingo.RecordWriter) {
 	// Create a listner for each port
 	ftpPorts, err := flamingo.CrackPorts(params.FTPPorts)
 	if err != nil {
-		log.Fatal("failed to process ftp ports %s: %s", params.FTPPorts, err)
+		log.Fatalf("failed to process ftp ports %s: %s", params.FTPPorts, err)
 	}
 
 	for _, port := range ftpPorts {
